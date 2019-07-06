@@ -34,8 +34,6 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
     public void processRecords(ProcessRecordsInput processRecordsInput) {
         LOGGER.info("Received " + processRecordsInput.records().size() + " records");
         processRecordsInput.records().parallelStream().forEach(record -> dataProcessor.processor(record));
-
-
     }
 
     @Override
