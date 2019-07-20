@@ -1,7 +1,14 @@
 package com.ddsolutions.rsvp.config;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.ddsolutions.rsvp.kinesis.EventProcessorFactory;
 import com.ddsolutions.rsvp.kinesis.KinesisRecordProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -9,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
@@ -28,12 +36,7 @@ import java.util.function.Supplier;
 public class RSVPApplicationConfig {
 
     private ApplicationContext applicationContext;
-
-    @Value("${bootstrap.servers}")
-    private String bootstrapServers;
-
-    @Value("${kafka.rsvp.topic}")
-    private String topicName;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RSVPApplicationConfig.class);
 
     @Value("${stream.name}")
     private String streamName;
@@ -60,7 +63,7 @@ public class RSVPApplicationConfig {
                 .credentialsProvider(new AwsCredentialsProvider() {
                     @Override
                     public AwsCredentials resolveCredentials() {
-                        //return InstanceProfileCredentialsProvider.create().resolveCredentials();
+//                        return InstanceProfileCredentialsProvider.create().resolveCredentials();
                         return ProfileCredentialsProvider.create("doubledigit").resolveCredentials();
                     }
                 }).region(Region.US_EAST_1).build();
@@ -94,9 +97,13 @@ public class RSVPApplicationConfig {
     public ConfigsBuilder createConfigBuilder(KinesisAsyncClient kinesisAsyncClient,
                                               DynamoDbAsyncClient dynamoDbAsyncClient,
                                               CloudWatchAsyncClient cloudWatchAsyncClient) {
-        return new ConfigsBuilder(streamName, appName, kinesisAsyncClient, dynamoDbAsyncClient,
-                cloudWatchAsyncClient, UUID.randomUUID().toString(), new EventProcessorFactory(createProcessor()))
-                .tableName(tableName);
+        return new ConfigsBuilder(streamName,
+                appName,
+                kinesisAsyncClient,
+                dynamoDbAsyncClient,
+                cloudWatchAsyncClient,
+                UUID.randomUUID().toString(),
+                new EventProcessorFactory(createProcessor()));
     }
 
     @Bean
@@ -104,11 +111,18 @@ public class RSVPApplicationConfig {
         ProcessorConfig processorConfig = configsBuilder.processorConfig()
                 .callProcessRecordsEvenForEmptyRecordList(true);
         MetricsConfig metricsConfig = configsBuilder.metricsConfig().metricsLevel(MetricsLevel.NONE);
-        LeaseManagementConfig leaseManagementConfig = configsBuilder.leaseManagementConfig()
-                .cleanupLeasesUponShardCompletion(true).maxLeasesForWorker(25).consistentReads(true);
+        LeaseManagementConfig leaseManagementConfig =
+                configsBuilder.leaseManagementConfig()
+                        .cleanupLeasesUponShardCompletion(true)
+                        .maxLeasesForWorker(25)
+                        .consistentReads(false);
 
-        return new Scheduler(configsBuilder.checkpointConfig(), configsBuilder.coordinatorConfig(),
-                leaseManagementConfig, configsBuilder.lifecycleConfig(),
-                metricsConfig, processorConfig, configsBuilder.retrievalConfig());
+        return new Scheduler(configsBuilder.checkpointConfig(),
+                configsBuilder.coordinatorConfig(),
+                leaseManagementConfig,
+                configsBuilder.lifecycleConfig(),
+                metricsConfig,
+                processorConfig,
+                configsBuilder.retrievalConfig());
     }
 }

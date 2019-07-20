@@ -10,8 +10,6 @@ variable "environment" {
 }
 
 
-
-
 //Default Variables
 variable "default_region" {
   type    = "string"

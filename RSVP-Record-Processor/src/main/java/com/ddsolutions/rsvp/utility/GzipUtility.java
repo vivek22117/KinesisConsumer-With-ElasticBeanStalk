@@ -1,8 +1,9 @@
 package com.ddsolutions.rsvp.utility;
 
-import com.ddsolutions.rsvp.domain.RSVPEventRecord;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -10,12 +11,11 @@ import java.util.Base64;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+@Component
 public class GzipUtility {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(GzipUtility.class);
 
     public static byte[] compressData(byte[] bytes) {
-
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream)) {
                 gzipOutputStream.write(bytes);
@@ -30,8 +30,10 @@ public class GzipUtility {
     public static String decompressData(byte[] compressData) {
 
         if (!isZipped(compressData)) {
+            LOGGER.debug("This is what happened");
             return new String(compressData);
         }
+        LOGGER.debug("decompressing rsvp event");
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(compressData)) {
             try (GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream)) {
                 try (InputStreamReader inputStreamReader = new InputStreamReader(gzipInputStream, StandardCharsets.UTF_8)) {
@@ -41,12 +43,29 @@ public class GzipUtility {
                         while ((line = bufferedReader.readLine()) != null) {
                             builder.append(line);
                         }
+                        LOGGER.debug("decompression done! {}", builder.toString());
                         return builder.toString();
                     }
                 }
             }
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to decompress the file.." + ex.getMessage());
+            LOGGER.error("Failed to decompress the file..", ex);
+            return null;
+        }
+    }
+
+    public static byte[] decompress(byte[] compressedData) throws IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(compressedData.length)) {
+            try (GzipCompressorInputStream decompressorStream =
+                         new GzipCompressorInputStream(new ByteArrayInputStream(compressedData))) {
+                outputStream.write(compressedData);
+                decompressorStream.close();
+
+                return outputStream.toByteArray();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to decompress the file from decompress method", e);
+            throw e;
         }
     }
 
@@ -54,11 +73,11 @@ public class GzipUtility {
         return (compressData[0] == (byte) (GZIPInputStream.GZIP_MAGIC)) && (compressData[1] == (byte) (GZIPInputStream.GZIP_MAGIC >> 8));
     }
 
-    public static byte[] serializeData(RSVPEventRecord rsvpEventRecord) {
+    public static byte[] serializeData(String rsvpEventRecord) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(bos)
         ) {
-            output.writeObject(rsvpEventRecord.toString());
+            output.writeObject(rsvpEventRecord);
             LOGGER.info("Object has been serialized");
             return Base64.getEncoder().encode(bos.toByteArray());
         } catch (Exception ex) {
@@ -68,6 +87,7 @@ public class GzipUtility {
     }
 
     public static String deserializeData(String data) {
+        LOGGER.debug(data);
         byte[] decode = Base64.getDecoder().decode(data);
         try (ByteArrayInputStream bis = new ByteArrayInputStream(decode);
              ObjectInputStream out = new ObjectInputStream(bis)) {
