@@ -42,13 +42,12 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
     public void processRecords(ProcessRecordsInput processRecordsInput) {
         LOGGER.info("Received " + processRecordsInput.records().size() + " records");
         processRecordsInput.records()
-                .parallelStream()
                 .forEach(record -> {
                     try {
                         dataProcessor.processor(record);
                         LOGGER.debug("record processing done!");
                     } catch (Exception ex) {
-                        LOGGER.error("");
+                        LOGGER.error("Exception occurred while processing record: {}", record);
                     }
                 });
         if (System.currentTimeMillis() > nextCheckPointTime) {

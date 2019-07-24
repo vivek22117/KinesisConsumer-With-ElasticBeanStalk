@@ -19,7 +19,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   wait_for_ready_timeout = var.wait_for_ready_timeout
 
   tags {
-    component = "${local.common_tags}"
+    component = local.common_tags
   }
 
   setting {
@@ -37,13 +37,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:ec2:vpc"
     name      = "Subnets"
-    value     = "${join(",", data.terraform_remote_state.vpc.private_subnets)}"
+    value     = join(",", data.terraform_remote_state.vpc.private_subnets)
   }
 
   setting {
     namespace = "aws:ec2:vpc"
     name      = "ELBSubnets"
-    value     = "${join(",", data.terraform_remote_state.vpc.private_subnets)}"
+    value     = join(",", data.terraform_remote_state.vpc.private_subnets)
   }
 
   setting {
@@ -90,7 +90,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:healthreporting:system"
     name = "SystemType"
-    value = "${var.enhanced_reporting_enabled ? "enhanced" : "basic"}"
+    value = var.enhanced_reporting_enabled ? "enhanced" : "basic"
   }
 
   setting = {
@@ -127,31 +127,31 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "IamInstanceProfile"
-    value = "${aws_iam_instance_profile.rsvp_beanstalk_ec2_profile.name}"
+    value = aws_iam_instance_profile.rsvp_beanstalk_ec2_profile.name
   }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "EC2KeyName"
-    value = "${var.key_pair}"
+    value = var.key_pair
   }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "InstanceType"
-    value = "${var.instance_type}"
+    value = var.instance_type
   }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "RootVolumeSize"
-    value = "${var.root_volume_size}"
+    value = var.root_volume_size
   }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "RootVolumeType"
-    value = "${var.root_volume_type}"
+    value = var.root_volume_type
   }
 
   setting {
@@ -163,19 +163,19 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "SecurityGroups"
-    value = "${aws_security_group.rsvp_eb_sg.id}"
+    value = aws_security_group.rsvp_eb_sg.id
   }
 
   setting {
     namespace = "aws:autoscaling:asg"
     name = "MinSize"
-    value = "${var.autoscale_min}"
+    value = var.autoscale_min
   }
 
   setting {
     namespace = "aws:autoscaling:asg"
     name = "MaxSize"
-    value = "${var.autoscale_max}"
+    value = var.autoscale_max
   }
 
   setting {
@@ -193,7 +193,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elbv2:loadbalancer"
     name = "SecurityGroups"
-    value = "${aws_security_group.rsvp_eb_sg.id}"
+    value = aws_security_group.rsvp_eb_sg.id
   }
 
   setting {
@@ -215,10 +215,10 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elbv2:listener:${var.ssh_listener_port}"
     name      = "ListenerEnabled"
-    value     = "${var.ssh_listener_enabled}"
+    value     = var.ssh_listener_enabled
   }
 
-  ###===================== Application ENV vars ======================###
+  ###===================== Application EB ENV vars ======================###
 
   setting {
     namespace = "aws:elasticbeanstalk:application"
@@ -229,19 +229,19 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name      = "EnvironmentType"
-    value     = "${var.environment}"
+    value     = var.environment
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name = "ServiceRole"
-    value = "${aws_iam_role.rsvp_beanstalk_role.name}"
+    value = aws_iam_role.rsvp_beanstalk_role.name
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name = "LoadBalancerType"
-    value = "${var.loadbalancer_type}"
+    value = var.loadbalancer_type
   }
 
   ###===================== Application ENV vars ======================###
@@ -249,31 +249,37 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "RUNTIME_ENVIRONMENT"
-    value = "${var.environment}"
+    value = var.environment
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "KINESIS_STREAM"
-    value = "${data.terraform_remote_state.rsvp_lambda.kinesis_arn}"
+    value = data.terraform_remote_state.rsvp_lambda.kinesis_arn
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name = "DYNAMODB_TABLE"
+    value = data.terraform_remote_state.rsvp_lambda.dynamodb_table
   }
 }
 
 
 data "aws_lb" "rsvp_alb" {
-  arn = "${aws_elastic_beanstalk_environment.rsvp_eb_environment.load_balancers[0]}"
+  arn = aws_elastic_beanstalk_environment.rsvp_eb_environment.load_balancers[0]
 }
 
 data "aws_autoscaling_group" "rsvp_asg" {
-  name = "${aws_elastic_beanstalk_environment.rsvp_eb_environment.autoscaling_groups[0]}"
+  name = aws_elastic_beanstalk_environment.rsvp_eb_environment.autoscaling_groups[0]
 }
 
 data "aws_lb_target_group" "rspv_alb_tg" {
-  arn = "${data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]}"
+  arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
 }
 
 resource "aws_lb_listener" "http_to_http_redirect" {
-  load_balancer_arn = "${data.aws_lb.rsvp_alb.arn}"
+  load_balancer_arn = data.aws_lb.rsvp_alb.arn
   port              = "80"
   protocol          = "HTTP"
 
@@ -289,7 +295,7 @@ resource "aws_lb_listener" "http_to_http_redirect" {
 }
 
 resource "aws_lb_listener_rule" "http_root_redirect_to_index_page_v1" {
-  listener_arn = "${aws_lb_listener.http_to_http_redirect.arn}"
+  listener_arn = aws_lb_listener.http_to_http_redirect.arn
 
   action {
     type = "redirect"
@@ -298,7 +304,7 @@ resource "aws_lb_listener_rule" "http_root_redirect_to_index_page_v1" {
       port        = "5500"
       protocol    = "HTTP"
       status_code = "HTTP_200"
-      path        = "/rsvp/healthcheck"
+      path        = "/acutator/health"
     }
   }
 

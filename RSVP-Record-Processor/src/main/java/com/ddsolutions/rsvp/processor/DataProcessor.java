@@ -3,6 +3,7 @@ package com.ddsolutions.rsvp.processor;
 import com.ddsolutions.rsvp.domain.RSVPEventRecord;
 import com.ddsolutions.rsvp.utility.GzipUtility;
 import com.ddsolutions.rsvp.utility.JsonUtility;
+import com.ddsolutions.rsvp.utility.S3Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,17 +14,23 @@ import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Component
 public class DataProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessor.class);
     private final CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+    private static List<RSVPEventRecord> listOfRsvpRecords = new ArrayList<>();
 
     private JsonUtility jsonUtility;
+    private S3Utils s3Utils;
 
     @Autowired
-    public DataProcessor(JsonUtility jsonUtility) {
+    public DataProcessor(JsonUtility jsonUtility, S3Utils s3Utils) {
         this.jsonUtility = jsonUtility;
+        this.s3Utils = s3Utils;
     }
 
     public void processor(KinesisClientRecord record) {
@@ -34,12 +41,32 @@ public class DataProcessor {
             String deserializeData = GzipUtility.deserializeData(decompressedData);
             RSVPEventRecord rsvpEventRecord = jsonUtility.convertFromJson(deserializeData, RSVPEventRecord.class);
 
+            collectAndPersist(rsvpEventRecord);
+
             LOGGER.debug("Processing done!");
         } catch (CharacterCodingException ex) {
             LOGGER.error("Malformed data: {}", data, ex);
         } catch (IOException ex) {
-            LOGGER.error("json parsing failed: {}", data, ex);
+            LOGGER.error("Json parsing failed: {}", data, ex);
         }
+
+    }
+
+    private void collectAndPersist(RSVPEventRecord rsvpEventRecord) throws IOException {
+        int batchSize = 10;
+        listOfRsvpRecords.add(rsvpEventRecord);
+        if (listOfRsvpRecords.size() == batchSize) {
+            String s3Key = createS3Key(listOfRsvpRecords);
+            s3Utils.putFileToS3(listOfRsvpRecords, true, s3Key);
+            listOfRsvpRecords = new ArrayList<>();
+        }
+    }
+
+    private String createS3Key(List<RSVPEventRecord> listOfRsvpRecords) {
+        listOfRsvpRecords.sort(Comparator.comparingLong(RSVPEventRecord::getMtime).reversed());
+
+        return null;
+
 
     }
 }

@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.concurrent.Future;
 
 import static java.util.stream.Collectors.toList;
 
+@Component
 public class S3Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Utils.class);
 
