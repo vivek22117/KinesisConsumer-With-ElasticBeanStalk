@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+    <property name="IS_ENVIRONMENT_DEVL_QUAL_CERT_OR_PROD" value="true"/>
+    <property name="LOG_LEVEL" value="DEBUG"/>
+    <property name="LOG_DIR" value="/APP_LOGGING"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- By default, encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <if condition='"${environment}".equalsIgnoreCase("Prod")'>
+        <then>
+            <property name="LOG_LEVEL" value="DEBUG"/>
+        </then>
+    </if>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>5MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- keep N days' worth of history -->
+            <maxHistory>1</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %thread %level %logger %line %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.amazonaws" level="ERROR" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.springframework" level="ERROR" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.apache" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <root level="DEBUG">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
