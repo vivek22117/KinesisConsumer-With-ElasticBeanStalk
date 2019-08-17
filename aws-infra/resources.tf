@@ -302,7 +302,6 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   }
 
   ###===================== Application ENV vars ======================###
-
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "RUNTIME_ENVIRONMENT"
