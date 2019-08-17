@@ -21,7 +21,12 @@ variable "s3_bucket_prefix" {
   default = "teamconcept-tfstate"
 }
 
-//EB Variables
+//EB Default Variables
+variable "tier" {
+  default = "WebServer"
+  description = "Beanstalk environment tier {WebServer, Worker}"
+}
+
 variable "deploy_key" {
   type = "string"
   description = "S3 key path for beanstalk application jar"
@@ -38,8 +43,12 @@ variable "config_document" {
   description = "A JSON document describing the environment and instance metrics to publish to CloudWatch."
 }
 
+variable "eb_environment" {
+  type = string
+  description = "Environment type, e.g. 'LoadBalanced' or 'SingleInstance'"
+}
 variable "elb_scheme" {
-  default     = "internal"
+  type     = string
   description = "Specify if load balancer in your Amazon VPC so that your Elastic Beanstalk application cannot be accessed from outside"
 }
 
@@ -48,6 +57,20 @@ variable "loadbalancer_certificate_arn" {
   description = "Load Balancer SSL certificate ARN."
 }
 
+variable "eb_command_timeout" {
+  type = number
+  description = "Number of seconds to wait for an instance to complete executing commands + 240"
+}
+
+variable "deployment_batch_size" {
+  type = number
+  description = "Percentage or fixed number of Amazon EC2 instances"
+}
+
+variable "dp_batch_size_type" {
+  type = string
+  description = "The type of number that is specified in BatchSize."
+}
 variable "ssh_listener_enabled" {
   default     = "false"
   description = "Enable ssh port"
@@ -93,6 +116,11 @@ variable "root_volume_type" {
   description = "The type of the EBS root volume"
 }
 
+variable "instance_ami" {
+  type = string
+  description = "Amazon machine image to launch EC2"
+}
+
 variable "instance_type" {
   type     = "string"
   description = "Instances type"
@@ -123,9 +151,75 @@ variable "autoscale_max" {
   description = "Maximum instances in charge"
 }
 
+variable "availability_zones" {
+  type = string
+  description = "Choose the number of AZs for your instances"
+}
+
+variable "autoscale_measure_name" {
+  type = string
+  description = "Metric used for your Auto Scaling trigger"
+}
+
+variable "autoscale_statistic" {
+  type = string
+  description = "Statistic the trigger should use, such as Averag, Maximum, Minimum"
+}
+
+variable "autoscale_unit" {
+  type = string
+  description = "Unit for the trigger measurement, such as Bytes"
+}
+
+variable "autoscale_lower_bound" {
+  type = number
+  description = "Minimum level of autoscale metric to remove an ec2 instance"
+}
+
+variable "scale_down_value" {
+  type = number
+  description = "Number of EC2 instances to remove when performing a scaling activity"
+}
+
+variable "autoscale_upper_bound" {
+  type = number
+  description = "Maximum level of autoscale metric to add new ec2 instance"
+}
+
+variable "scale_up_value" {
+  type = number
+  description = "Number of EC2 instances to add when performing a scaling activity"
+}
+
 variable "loadbalancer_type" {
   type     = "string"
   description = "Load Balancer type, e.g. 'application' or 'classic'"
+}
+
+
+variable "monitorning_interval" {
+  type = string
+  description = "Time interval for AWS Cloudwatch metrics"
+}
+
+variable "asg_timeout" {
+  type = string
+  description = "Maximum amount of time to wait for all instances in a batch of instances to pass health checks before canceling the update."
+}
+
+variable "healthcheck_interval" {
+  type = number
+  description = "The interval, in seconds, at which Elastic Load Balancing will check the health"
+}
+
+variable "healthcheck_timeout" {
+  type = number
+  description = "Time, in seconds, to wait for a response during a health check."
+}
+
+variable "hc_threshold_count" {
+  type = number
+  description = "Consecutive successful requests before Elastic Load Balancing changes the instance health status."
 }
 //Local variables
 locals {

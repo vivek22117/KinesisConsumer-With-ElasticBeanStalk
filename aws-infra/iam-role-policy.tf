@@ -1,7 +1,7 @@
-resource "aws_iam_role" "rsvp_beanstalk_role" {
+resource "aws_iam_role" "rsvp_beanstalk_service_role" {
   depends_on = ["aws_iam_policy.rsvp_beanstalk_policy"]
 
-  name = "RSVPBeanStalkRole"
+  name = "RSVPBeanStalkServiceRole"
 
   assume_role_policy = <<EOF
 {
@@ -12,8 +12,7 @@ resource "aws_iam_role" "rsvp_beanstalk_role" {
       "Principal": {
         "Service": "elasticbeanstalk.amazonaws.com"
       },
-      "Effect": "Allow",
-      "Sid": ""
+      "Effect": "Allow"
     }
   ]
 }
@@ -21,7 +20,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "beanstalk_service" {
-  role       = "${aws_iam_role.rsvp_beanstalk_role.name}"
+  role       = aws_iam_role.rsvp_beanstalk_service_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService"
 }
 
@@ -29,7 +28,7 @@ resource "aws_iam_role_policy_attachment" "beanstalk_service" {
 resource "aws_iam_role" "rsvp_ec2_role" {
   depends_on = ["aws_iam_policy.rsvp_ec2_policy"]
 
-  name = "RSVPEC2Role"
+  name = "RSVPRecordProcessorEC2Role"
 
   assume_role_policy = <<EOF
 {
@@ -40,8 +39,7 @@ resource "aws_iam_role" "rsvp_ec2_role" {
       "Principal": {
         "Service": "ec2.amazonaws.com"
       },
-      "Effect": "Allow",
-      "Sid": ""
+      "Effect": "Allow"
     }
   ]
 }
@@ -49,7 +47,7 @@ EOF
 }
 
 resource "aws_iam_policy" "rsvp_ec2_policy" {
-  name = "RSVPLambdaProcessorPolicy"
+  name = "RSVPRecordProcessorEC2Policy"
   description = "Policy to access AWS resources"
   path = "/"
   policy = <<EOF
@@ -66,27 +64,6 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "logs:DeleteLogGroup"
       ],
       "Resource": "arn:aws:logs:*:*:*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "elasticloadbalancing:DescribeInstanceHealth",
-        "elasticloadbalancing:DescribeLoadBalancers",
-        "elasticloadbalancing:DescribeTargetHealth",
-        "ec2:DescribeInstances",
-        "ec2:DescribeInstanceStatus",
-        "ec2:GetConsoleOutput",
-        "ec2:AssociateAddress",
-        "ec2:DescribeAddresses",
-        "ec2:DescribeSecurityGroups",
-        "sqs:GetQueueAttributes",
-        "sqs:GetQueueUrl",
-        "autoscaling:DescribeAutoScalingGroups",
-        "autoscaling:DescribeAutoScalingInstances",
-        "autoscaling:DescribeScalingActivities",
-        "autoscaling:DescribeNotificationConfigurations"
-      ],
-      "Resource": "*"
     },
     {
       "Effect": "Allow",
@@ -169,7 +146,9 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "arn:aws:s3:::teamconcept-deploy-*/*",
         "arn:aws:s3:::teamconcept-tfstate-*/*",
         "arn:aws:s3:::teamconcept-deploy-*",
-        "arn:aws:s3:::teamconcept-tfstate-*"
+        "arn:aws:s3:::teamconcept-tfstate-*",
+        "arn:aws:s3:::rsvp-record-dev-bucket*"
+        "arn:aws:s3:::rsvp-record-dev-bucket/*"
       ]
     },
     {
@@ -192,8 +171,13 @@ resource "aws_iam_role_policy_attachment" "rsvp_beanstalk_policy_role_att" {
   role       = aws_iam_role.rsvp_ec2_role.name
 }
 
+resource "aws_iam_role_policy_attachment" "rsvp_beanstalk_policy_role_att_2" {
+  role       = aws_iam_role.rsvp_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
+}
+
 
 resource "aws_iam_instance_profile" "rsvp_beanstalk_ec2_profile" {
-  name = "RSVPBeanstalkECProfile"
+  name = "RSVPRecordProcessorEC2Profile"
   role = aws_iam_role.rsvp_ec2_role.name
 }

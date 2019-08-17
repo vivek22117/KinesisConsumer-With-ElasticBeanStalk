@@ -1,21 +1,15 @@
 package com.ddsolutions.rsvp.config;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.ddsolutions.rsvp.kinesis.EventProcessorFactory;
 import com.ddsolutions.rsvp.kinesis.KinesisRecordProcessor;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -32,11 +26,16 @@ import software.amazon.kinesis.processor.ProcessorConfig;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static com.ddsolutions.rsvp.utility.PropertyLoaderUtility.getInstance;
+import static java.lang.Boolean.parseBoolean;
+import static org.slf4j.LoggerFactory.getLogger;
+
 @Configuration
 public class RSVPApplicationConfig {
 
     private ApplicationContext applicationContext;
-    private static final Logger LOGGER = LoggerFactory.getLogger(RSVPApplicationConfig.class);
+    private static AwsCredentialsProvider awsCredentialsProvider;
+    private static Logger logger = getLogger(RSVPApplicationConfig.class);
 
     @Value("${stream.name}")
     private String streamName;
@@ -60,57 +59,44 @@ public class RSVPApplicationConfig {
     @Bean
     public KinesisAsyncClient createKinesisClient() {
         return KinesisAsyncClient.builder()
-                .credentialsProvider(new AwsCredentialsProvider() {
-                    @Override
-                    public AwsCredentials resolveCredentials() {
-//                        return InstanceProfileCredentialsProvider.create().resolveCredentials();
-                        return ProfileCredentialsProvider.create("doubledigit").resolveCredentials();
-                    }
-                }).region(Region.US_EAST_1).build();
+                .credentialsProvider(getAwsCredentials()).region(Region.US_EAST_1).build();
     }
 
     @Bean
     public DynamoDbAsyncClient createDynamoDBClient() {
         return DynamoDbAsyncClient.builder()
-                .credentialsProvider(new AwsCredentialsProvider() {
-                    @Override
-                    public AwsCredentials resolveCredentials() {
-//                        return InstanceProfileCredentialsProvider.create().resolveCredentials();
-                        return ProfileCredentialsProvider.create("doubledigit").resolveCredentials();
-                    }
-                }).region(Region.US_EAST_1).build();
+                .credentialsProvider(getAwsCredentials()).region(Region.US_EAST_1).build();
     }
 
     @Bean
     public CloudWatchAsyncClient createCloudWatchClient() {
         return CloudWatchAsyncClient.builder()
-                .credentialsProvider(new AwsCredentialsProvider() {
-                    @Override
-                    public AwsCredentials resolveCredentials() {
-//                        return InstanceProfileCredentialsProvider.create().resolveCredentials();
-                        return ProfileCredentialsProvider.create("doubledigit").resolveCredentials();
-                    }
-                }).region(Region.US_EAST_1).build();
+                .credentialsProvider(getAwsCredentials()).region(Region.US_EAST_1).build();
     }
 
     @Bean
-    public ConfigsBuilder createConfigBuilder(KinesisAsyncClient kinesisAsyncClient,
+    public ConfigsBuilder createConfigBuilder(EventProcessorFactory eventProcessorFactory,
+                                              KinesisAsyncClient kinesisAsyncClient,
                                               DynamoDbAsyncClient dynamoDbAsyncClient,
                                               CloudWatchAsyncClient cloudWatchAsyncClient) {
-        return new ConfigsBuilder(streamName,
+        ConfigsBuilder configsBuilder = new ConfigsBuilder(streamName,
                 appName,
                 kinesisAsyncClient,
                 dynamoDbAsyncClient,
                 cloudWatchAsyncClient,
                 UUID.randomUUID().toString(),
-                new EventProcessorFactory(createProcessor()));
+                eventProcessorFactory);
+        configsBuilder.tableName(tableName);
+        return configsBuilder;
     }
 
     @Bean
     public Scheduler creatScheduler(ConfigsBuilder configsBuilder) {
         ProcessorConfig processorConfig = configsBuilder.processorConfig()
                 .callProcessRecordsEvenForEmptyRecordList(true);
+
         MetricsConfig metricsConfig = configsBuilder.metricsConfig().metricsLevel(MetricsLevel.NONE);
+
         LeaseManagementConfig leaseManagementConfig =
                 configsBuilder.leaseManagementConfig()
                         .cleanupLeasesUponShardCompletion(true)
@@ -124,5 +110,22 @@ public class RSVPApplicationConfig {
                 metricsConfig,
                 processorConfig,
                 configsBuilder.retrievalConfig());
+    }
+
+    private static AwsCredentialsProvider getAwsCredentials() {
+        if (awsCredentialsProvider == null) {
+            boolean isRunningInEC2 = parseBoolean(getInstance().getProperty("isRunningInEC2"));
+            boolean isRunningInLocal = parseBoolean(getInstance().getProperty("isRunningInLocal"));
+            if (isRunningInEC2) {
+                awsCredentialsProvider = InstanceProfileCredentialsProvider.builder().build();
+                return awsCredentialsProvider;
+            } else if (isRunningInLocal) {
+                awsCredentialsProvider = ProfileCredentialsProvider.builder().profileName("doubledigit").build();
+                return awsCredentialsProvider;
+            } else {
+                awsCredentialsProvider = DefaultCredentialsProvider.builder().build();
+            }
+        }
+        return awsCredentialsProvider;
     }
 }

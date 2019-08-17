@@ -1,7 +1,7 @@
 // Security Group for Beanstalk Application
-resource "aws_security_group" "rsvp_eb_sg" {
-  name        = "rsvp-eb-sg"
-  description = "Allow inbound traffic from provided Security Groups"
+resource "aws_security_group" "rsvp_eb_ec2_sg" {
+  name        = "rsvp-eb-ec2-sg"
+  description = "Allow inbound traffic from provided Security Groups & ELB"
   vpc_id      = data.terraform_remote_state.vpc.vpc_id
 
   lifecycle {
@@ -12,20 +12,30 @@ resource "aws_security_group" "rsvp_eb_sg" {
 }
 
 
-resource "aws_security_group_rule" "allow_traffic_from_sg" {
+resource "aws_security_group_rule" "allow_traffic_from_bastion_sg" {
   type                     = "ingress"
-  from_port                = 0
-  to_port                  = 0
-  protocol                 = "-1"
-  security_group_id        = aws_security_group.rsvp_eb_sg.id
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "ssh"
+  security_group_id        = aws_security_group.rsvp_eb_ec2_sg.id
   source_security_group_id = data.terraform_remote_state.vpc.bastion_sg
 }
+
+resource "aws_security_group_rule" "allow_traffic_from_lb_sg" {
+  type                     = "ingress"
+  from_port                = 5500
+  to_port                  = 5500
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rsvp_eb_ec2_sg.id
+  source_security_group_id = data.terraform_remote_state.vpc.bastion_sg
+}
+
 
 resource "aws_security_group_rule" "allow_outbound_rule" {
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
-  security_group_id = aws_security_group.rsvp_eb_sg.id
+  security_group_id = aws_security_group.rsvp_eb_ec2_sg.id
   cidr_blocks       = ["0.0.0.0/0"]
 }

@@ -51,7 +51,8 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
                     }
                 });
         if (System.currentTimeMillis() > nextCheckPointTime) {
-            List<String> recordsSequenceNumbers = processRecordsInput.records().stream().map(KinesisClientRecord::sequenceNumber)
+            List<String> recordsSequenceNumbers = processRecordsInput.records()
+                    .stream().map(KinesisClientRecord::sequenceNumber)
                     .collect(Collectors.toList());
             try {
                 processRecordsInput.checkpointer()

@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -23,6 +25,7 @@ public class DataProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessor.class);
     private final CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
     private static List<RSVPEventRecord> listOfRsvpRecords = new ArrayList<>();
+    private static final String DELIMITER = "/";
 
     private JsonUtility jsonUtility;
     private S3Utils s3Utils;
@@ -63,10 +66,14 @@ public class DataProcessor {
     }
 
     private String createS3Key(List<RSVPEventRecord> listOfRsvpRecords) {
+        LocalDateTime date = LocalDateTime.now();
         listOfRsvpRecords.sort(Comparator.comparingLong(RSVPEventRecord::getMtime).reversed());
-
-        return null;
-
-
+        StringBuilder s3Key = new StringBuilder()
+                .append("rsvp").append(DELIMITER)
+                .append(date.getYear()).append(DELIMITER)
+                .append(date.getMonthValue()).append(DELIMITER)
+                .append(date.getDayOfMonth()).append(DELIMITER)
+                .append(Instant.now().toEpochMilli()).append("_rsvp.records");
+        return s3Key.toString();
     }
 }

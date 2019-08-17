@@ -1,5 +1,5 @@
 resource "aws_elastic_beanstalk_application" "rsvp_eb_application" {
-  name = "rsvp-event-processor"
+  name = "rsvp-event-processor-${var.environment}"
 }
 
 resource "aws_elastic_beanstalk_application_version" "rsvp_eb_version" {
@@ -12,14 +12,17 @@ resource "aws_elastic_beanstalk_application_version" "rsvp_eb_version" {
 
 resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   application = aws_elastic_beanstalk_application.rsvp_eb_application.name
-  name = aws_elastic_beanstalk_application.rsvp_eb_application.name-var.environment
+  name = var.environment
   solution_stack_name = "64bit Amazon Linux 2018.03 v3.0.7 running Tomcat 8 Java 8"
   version_label = aws_elastic_beanstalk_application_version.rsvp_eb_version.name
+  tier = var.tier
 
   wait_for_ready_timeout = var.wait_for_ready_timeout
 
-  tags {
-    component = local.common_tags
+  tags = local.common_tags
+
+  lifecycle {
+    ignore_changes = ["tags"]
   }
 
   setting {
@@ -43,13 +46,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:ec2:vpc"
     name      = "ELBSubnets"
-    value     = join(",", data.terraform_remote_state.vpc.private_subnets)
+    value     = join(",", data.terraform_remote_state.vpc.public_subnets)
   }
 
   setting {
     namespace = "aws:ec2:vpc"
     name = "ELBScheme"
-    value = "internal"
+    value = var.elb_scheme
   }
 
   setting {
@@ -61,24 +64,30 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:command"
     name = "Timeout"
-    value = "3000"
+    value = var.eb_command_timeout
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:command"
     name = "BatchSize"
-    value = "50"
+    value = var.deployment_batch_size
   }
   setting {
     namespace = "aws:elasticbeanstalk:command"
     name = "BatchSizeType"
-    value = "Percentage"
+    value = var.dp_batch_size_type
   }
 
   setting {
     namespace = "aws:autoscaling:updatepolicy:rollingupdate"
     name = "RollingUpdateEnabled"
     value = var.rolling_update_enabled
+  }
+
+  setting {
+    namespace = "aws:autoscaling:updatepolicy:rollingupdate"
+    name = "Timeout"
+    value = var.asg_timeout
   }
 
   setting {
@@ -96,7 +105,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting = {
     namespace = "aws:elasticbeanstalk:healthreporting:system"
     name = "HealthCheckSuccessThreshold"
-    value = "Warning"
+    value = "Ok"
   }
 
   setting {
@@ -108,9 +117,28 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   ###===================== Application Load Balancer Health check settings =====================================###
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthCheckInterval"
+    value     = var.healthcheck_interval
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "HealthCheckPath"
     value     = var.healthcheck_url
   }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthCheckTimeout"
+    value     = var.healthcheck_timeout
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthyThresholdCount"
+    value     = var.hc_threshold_count
+  }
+
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "Port"
@@ -122,7 +150,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
     value     = "HTTP"
   }
 
-  ###=========================== Autoscale trigger ========================== ###
+  ###=========================== Autoscale & LaunchConfig========================== ###
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
@@ -134,6 +162,12 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "EC2KeyName"
     value = var.key_pair
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name = "ImageId"
+    value = var.instance_ami
   }
 
   setting {
@@ -157,13 +191,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "MonitoringInterval"
-    value = "1 minute"
+    value = var.monitorning_interval
   }
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
-    name = "SecurityGroups"
-    value = aws_security_group.rsvp_eb_sg.id
+    name      = "SSHSourceRestriction"
+    value     = "tcp,22,22,${data.terraform_remote_state.vpc.outputs.bastion_sg}"
   }
 
   setting {
@@ -176,6 +210,50 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
     namespace = "aws:autoscaling:asg"
     name = "MaxSize"
     value = var.autoscale_max
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "Availability Zones"
+    value     = var.availability_zones
+  }
+
+  ###=========================== Autoscale trigger ========================== ###
+
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "MeasureName"
+    value     = var.autoscale_measure_name
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "Statistic"
+    value     = var.autoscale_statistic
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "Unit"
+    value     = var.autoscale_unit
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "LowerThreshold"
+    value     = var.autoscale_lower_bound
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "LowerBreachScaleIncrement"
+    value     = var.scale_down_value
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "UpperThreshold"
+    value     = var.autoscale_upper_bound
+  }
+  setting {
+    namespace = "aws:autoscaling:trigger"
+    name      = "UpperBreachScaleIncrement"
+    value     = var.scale_up_value
   }
 
   setting {
@@ -192,31 +270,10 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
 
   setting {
     namespace = "aws:elbv2:loadbalancer"
-    name = "SecurityGroups"
-    value = aws_security_group.rsvp_eb_sg.id
-  }
-
-  setting {
-    namespace = "aws:elbv2:loadbalancer"
     name = "IdleTimeout"
     value = "300"
   }
 
-  setting {
-    namespace = "aws:elbv2:listener:${var.ssh_listener_port}"
-    name      = "ListenerProtocol"
-    value     = "TCP"
-  }
-  setting {
-    namespace = "aws:elbv2:listener:${var.ssh_listener_port}"
-    name      = "InstancePort"
-    value     = "22"
-  }
-  setting {
-    namespace = "aws:elbv2:listener:${var.ssh_listener_port}"
-    name      = "ListenerEnabled"
-    value     = var.ssh_listener_enabled
-  }
 
   ###===================== Application EB ENV vars ======================###
 
@@ -229,13 +286,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name      = "EnvironmentType"
-    value     = var.environment
+    value     = var.eb_environment
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name = "ServiceRole"
-    value = aws_iam_role.rsvp_beanstalk_role.name
+    value = aws_iam_role.rsvp_beanstalk_service_role.name
   }
 
   setting {
