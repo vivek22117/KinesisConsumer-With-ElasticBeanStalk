@@ -1,16 +1,28 @@
+# adding the zip/jar to the defined bucket
+resource "aws_s3_bucket_object" "ec2-app-package" {
+  bucket                 = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+  key                    = var.deploy_key
+  source                 = "${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar"
+  etag   = filemd5("${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar")
+}
+
 resource "aws_elastic_beanstalk_application" "rsvp_eb_application" {
   name = "rsvp-event-processor-${var.environment}"
 }
 
 resource "aws_elastic_beanstalk_application_version" "rsvp_eb_version" {
+  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+
   description = "version of new deployment"
-  application = "${aws_elastic_beanstalk_application}-Version-0.0.1"
-  bucket = data.terraform_remote_state.backend.deploy_bucket_name
+  application = "${aws_elastic_beanstalk_application.rsvp_eb_application.name}-Version-0.0.1"
+  bucket = data.terraform_remote_state.backend.outputs.deploy_bucket_name
   key = var.deploy_key
   name = aws_elastic_beanstalk_application.rsvp_eb_application.name
 }
 
 resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
+  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+
   application = aws_elastic_beanstalk_application.rsvp_eb_application.name
   name = var.environment
   solution_stack_name = "64bit Amazon Linux 2018.03 v3.0.7 running Tomcat 8 Java 8"
@@ -28,7 +40,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:ec2:vpc"
     name      = "VPCId"
-    value     = data.terraform_remote_state.vpc.vpc_id
+    value     = data.terraform_remote_state.vpc.outputs.vpc_id
   }
 
   setting {
@@ -40,13 +52,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:ec2:vpc"
     name      = "Subnets"
-    value     = join(",", data.terraform_remote_state.vpc.private_subnets)
+    value     = join(",", data.terraform_remote_state.vpc.outputs.private_subnets)
   }
 
   setting {
     namespace = "aws:ec2:vpc"
     name      = "ELBSubnets"
-    value     = join(",", data.terraform_remote_state.vpc.public_subnets)
+    value     = join(",", data.terraform_remote_state.vpc.outputs.public_subnets)
   }
 
   setting {
@@ -102,7 +114,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
     value = var.enhanced_reporting_enabled ? "enhanced" : "basic"
   }
 
-  setting = {
+  setting {
     namespace = "aws:elasticbeanstalk:healthreporting:system"
     name = "HealthCheckSuccessThreshold"
     value = "Ok"
@@ -311,13 +323,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "KINESIS_STREAM"
-    value = data.terraform_remote_state.rsvp_lambda.kinesis_arn
+    value = data.terraform_remote_state.rsvp_lambda.outputs.kinesis_arn
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "DYNAMODB_TABLE"
-    value = data.terraform_remote_state.rsvp_lambda.dynamodb_table
+    value = data.terraform_remote_state.rsvp_lambda.outputs.dynamodb_table
   }
 }
 
@@ -340,33 +352,42 @@ resource "aws_lb_listener" "http_to_http_redirect" {
   protocol          = "HTTP"
 
   default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "5500"
-      protocol    = "HTTP"
-      status_code = "HTTP_200"
-    }
+    type = "forward"
+    target_group_arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
   }
 }
 
-resource "aws_lb_listener_rule" "http_root_redirect_to_index_page_v1" {
+resource "aws_lb_listener_rule" "http_root_redirect_to_health" {
   listener_arn = aws_lb_listener.http_to_http_redirect.arn
+  priority = 100
 
   action {
-    type = "redirect"
-
-    redirect {
-      port        = "5500"
-      protocol    = "HTTP"
-      status_code = "HTTP_200"
-      path        = "/acutator/health"
-    }
+    type = "forward"
+    target_group_arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
   }
 
   condition {
     field  = "path-pattern"
     values = ["/"]
+  }
+}
+
+resource "aws_lb_listener_rule" "health_check" {
+  listener_arn = aws_lb_listener.http_to_http_redirect.arn
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "HEALTHY"
+      status_code  = "200"
+    }
+  }
+
+  condition {
+    field  = "path-pattern"
+    values = ["/health"]
   }
 }
 

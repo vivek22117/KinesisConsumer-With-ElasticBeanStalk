@@ -1,6 +1,4 @@
 resource "aws_iam_role" "rsvp_beanstalk_service_role" {
-  depends_on = ["aws_iam_policy.rsvp_beanstalk_policy"]
-
   name = "RSVPBeanStalkServiceRole"
 
   assume_role_policy = <<EOF
@@ -47,7 +45,7 @@ EOF
 }
 
 resource "aws_iam_policy" "rsvp_ec2_policy" {
-  name = "RSVPRecordProcessorEC2Policy"
+  name = "RSVPRecordProcessorEC2EBPolicy"
   description = "Policy to access AWS resources"
   path = "/"
   policy = <<EOF
@@ -147,7 +145,7 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "arn:aws:s3:::teamconcept-tfstate-*/*",
         "arn:aws:s3:::teamconcept-deploy-*",
         "arn:aws:s3:::teamconcept-tfstate-*",
-        "arn:aws:s3:::rsvp-record-dev-bucket*"
+        "arn:aws:s3:::rsvp-record-dev-bucket*",
         "arn:aws:s3:::rsvp-record-dev-bucket/*"
       ]
     },
@@ -160,7 +158,7 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "arn:aws:cloudformation:*:*:stack/awseb-*",
         "arn:aws:cloudformation:*:*:stack/eb-*"
       ]
-    },
+    }
   ]
 }
 EOF
@@ -178,6 +176,6 @@ resource "aws_iam_role_policy_attachment" "rsvp_beanstalk_policy_role_att_2" {
 
 
 resource "aws_iam_instance_profile" "rsvp_beanstalk_ec2_profile" {
-  name = "RSVPRecordProcessorEC2Profile"
+  name = "RSVPRecordProcessorEC2EBProfile"
   role = aws_iam_role.rsvp_ec2_role.name
 }

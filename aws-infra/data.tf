@@ -13,7 +13,7 @@ data "terraform_remote_state" "backend" {
 data "terraform_remote_state" "vpc" {
   backend = "s3"
 
-  config {
+  config = {
     profile = "doubledigit"
     bucket  = "${var.s3_bucket_prefix}-${var.environment}-${var.default_region}"
     key     = "state/${var.environment}/vpc/terraform.tfstate"
@@ -24,10 +24,10 @@ data "terraform_remote_state" "vpc" {
 data "terraform_remote_state" "rsvp_lambda" {
   backend = "s3"
 
-  config {
+  config = {
     profile = "doubledigit"
     bucket  = "${var.s3_bucket_prefix}-${var.environment}-${var.default_region}"
-    key     = "state/${var.environment}/vpc/rsvp-lambda-kinesis-db/terraform.tfstate"
+    key     = "state/${var.environment}/lambda/rsvp-lambda-kinesis-db/terraform.tfstate"
     region  = var.default_region
   }
 }
