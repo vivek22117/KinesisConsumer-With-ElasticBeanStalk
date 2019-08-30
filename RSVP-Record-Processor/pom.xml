@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ddsolutions.rsvp</groupId>
-    <artifactId>RSVP-Record-Processor</artifactId>
+    <artifactId>rsvp-record-processor</artifactId>
     <version>1.0.0</version>
 
     <name>RSVP-Record-Processor</name>

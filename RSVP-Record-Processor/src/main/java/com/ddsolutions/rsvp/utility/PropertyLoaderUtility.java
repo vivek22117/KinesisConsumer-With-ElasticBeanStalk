@@ -6,7 +6,7 @@ import java.util.Properties;
 
 public class PropertyLoaderUtility {
 
-    private static final String ENVIRONMENT = "Environment";
+    private static final String ENVIRONMENT = "environment";
     private static final String SUFFIX = ".properties";
     private static final String PREFFIX = "/application";
 

@@ -42,10 +42,8 @@ public class AWSClientConfiguration {
             boolean isRunningInLocal = parseBoolean(getInstance().getProperty("isRunningInLocal"));
             if (isRunningInEC2) {
                 awsCredentials = new InstanceProfileCredentialsProvider(true).getCredentials();
-                return awsCredentials;
             } else if (isRunningInLocal) {
                 awsCredentials = new ProfileCredentialsProvider("doubledigit").getCredentials();
-                return awsCredentials;
             } else {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
             }
