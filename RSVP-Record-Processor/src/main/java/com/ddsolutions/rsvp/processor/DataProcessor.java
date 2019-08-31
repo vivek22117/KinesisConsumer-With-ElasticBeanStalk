@@ -68,7 +68,7 @@ public class DataProcessor {
     private String createS3Key(List<RSVPEventRecord> listOfRsvpRecords) {
         LocalDateTime date = LocalDateTime.now();
         listOfRsvpRecords.sort(Comparator.comparingLong(RSVPEventRecord::getMtime).reversed());
-        StringBuilder s3Key = new StringBuilder()
+        StringBuilder s3Key = new StringBuilder().append("data").append(DELIMITER)
                 .append("rsvp").append(DELIMITER)
                 .append(date.getYear()).append(DELIMITER)
                 .append(date.getMonthValue()).append(DELIMITER)

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true">
-    <property name="IS_ENVIRONMENT_DEVL_QUAL_CERT_OR_PROD" value="true"/>
+    <property name="IS_ENVIRONMENT_DEVL_OR_PROD" value="true"/>
     <property name="LOG_LEVEL" value="DEBUG"/>
-    <property name="LOG_DIR" value="/APP_LOGGING"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- By default, encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->

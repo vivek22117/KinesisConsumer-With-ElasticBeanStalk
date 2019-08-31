@@ -18,11 +18,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 import software.amazon.kinesis.common.ConfigsBuilder;
 import software.amazon.kinesis.common.InitialPositionInStream;
+import software.amazon.kinesis.common.InitialPositionInStreamExtended;
 import software.amazon.kinesis.coordinator.Scheduler;
 import software.amazon.kinesis.leases.LeaseManagementConfig;
 import software.amazon.kinesis.metrics.MetricsConfig;
 import software.amazon.kinesis.metrics.MetricsLevel;
 import software.amazon.kinesis.processor.ProcessorConfig;
+import software.amazon.kinesis.retrieval.RetrievalConfig;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -31,6 +33,7 @@ import static com.ddsolutions.rsvp.utility.PropertyLoaderUtility.getInstance;
 import static java.lang.Boolean.parseBoolean;
 import static org.slf4j.LoggerFactory.getLogger;
 import static software.amazon.kinesis.common.InitialPositionInStream.TRIM_HORIZON;
+import static software.amazon.kinesis.common.InitialPositionInStreamExtended.newInitialPosition;
 
 @Configuration
 public class RSVPApplicationConfig {
@@ -47,6 +50,12 @@ public class RSVPApplicationConfig {
 
     @Value("${table.name}")
     private String tableName;
+
+    @Value("${isRunningInEC2}")
+    private boolean isRunningInEC2;
+
+    @Value("${isRunningInLocal}")
+    private boolean isRunningInLocal;
 
     @Autowired
     public RSVPApplicationConfig(ApplicationContext applicationContext) {
@@ -88,6 +97,7 @@ public class RSVPApplicationConfig {
                 cloudWatchAsyncClient,
                 UUID.randomUUID().toString(),
                 eventProcessorFactory);
+
         configsBuilder.tableName(tableName);
         return configsBuilder;
     }
@@ -95,18 +105,18 @@ public class RSVPApplicationConfig {
     @Bean
     public Scheduler creatScheduler(ConfigsBuilder configsBuilder) {
         ProcessorConfig processorConfig = configsBuilder.processorConfig()
-                .callProcessRecordsEvenForEmptyRecordList(true);
+                .callProcessRecordsEvenForEmptyRecordList(false);
 
-        MetricsConfig metricsConfig = configsBuilder.metricsConfig().metricsLevel(MetricsLevel.NONE);
+        MetricsConfig metricsConfig = configsBuilder.metricsConfig()
+                .metricsLevel(MetricsLevel.NONE);
 
-        LeaseManagementConfig leaseManagementConfig =
-                configsBuilder.leaseManagementConfig()
+        LeaseManagementConfig leaseManagementConfig = configsBuilder.leaseManagementConfig()
                         .cleanupLeasesUponShardCompletion(true)
                         .maxLeasesForWorker(25)
-                        .initialLeaseTableReadCapacity(5)
-                        .initialLeaseTableWriteCapacity(5)
                         .maxLeasesToStealAtOneTime(1)
                         .consistentReads(false);
+        RetrievalConfig retrievalConfig = configsBuilder.retrievalConfig()
+                .initialPositionInStreamExtended(newInitialPosition(TRIM_HORIZON));
 
         return new Scheduler(configsBuilder.checkpointConfig(),
                 configsBuilder.coordinatorConfig(),
@@ -114,19 +124,15 @@ public class RSVPApplicationConfig {
                 configsBuilder.lifecycleConfig(),
                 metricsConfig,
                 processorConfig,
-                configsBuilder.retrievalConfig());
+                retrievalConfig);
     }
 
-    private static AwsCredentialsProvider getAwsCredentials() {
+    private AwsCredentialsProvider getAwsCredentials() {
         if (awsCredentialsProvider == null) {
-            boolean isRunningInEC2 = parseBoolean(getInstance().getProperty("isRunningInEC2"));
-            boolean isRunningInLocal = parseBoolean(getInstance().getProperty("isRunningInLocal"));
             if (isRunningInEC2) {
                 awsCredentialsProvider = InstanceProfileCredentialsProvider.builder().build();
-                return awsCredentialsProvider;
             } else if (isRunningInLocal) {
                 awsCredentialsProvider = ProfileCredentialsProvider.builder().profileName("doubledigit").build();
-                return awsCredentialsProvider;
             } else {
                 awsCredentialsProvider = DefaultCredentialsProvider.builder().build();
             }

@@ -254,7 +254,13 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "DYNAMODB_TABLE"
-    value = data.terraform_remote_state.rsvp_lambda.outputs.dynamodb_table
+    value = aws_dynamodb_table.rsvp_kcl_lease_table.name
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name = "RSVP_RECORD_BUCKET"
+    value = data.terraform_remote_state.backend.outputs.deploy_bucket_name
   }
 }
 

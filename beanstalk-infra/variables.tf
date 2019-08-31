@@ -207,6 +207,58 @@ variable "hc_threshold_count" {
   type = number
   description = "Consecutive successful requests before Elastic Load Balancing changes the instance health status."
 }
+
+###====================KCL DynamoDB Variables=====================###
+variable "db_table_name" {
+  type        = "string"
+  description = "DynamoDB table"
+}
+
+variable "hash_key" {
+  type        = "string"
+  description = "DynamoDB table hash key"
+}
+
+variable "billing_mode" {
+  type        = "string"
+  default     = "PROVISIONED"
+  description = "DynamoDB Billing mode. Can be PROVISIONED or PAY_PER_REQUEST"
+}
+
+variable "enable_streams" {
+  type        = "string"
+  default     = "false"
+  description = "Enable DynamoDB streams"
+}
+
+variable "stream_view_type" {
+  type        = "string"
+  default     = ""
+  description = "When an item in the table is modified, what information is written to the stream KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES."
+}
+
+variable "autoscale_min_read_capacity" {
+  default     = 5
+  description = "DynamoDB autoscaling min read capacity"
+}
+
+variable "autoscale_min_write_capacity" {
+  default     = 5
+  description = "DynamoDB autoscaling min write capacity"
+}
+
+variable "enable_encryption" {
+  type        = "string"
+  default     = "false"
+  description = "Enable DynamoDB server-side encryption"
+}
+
+variable "enable_point_in_time_recovery" {
+  type        = "string"
+  default     = "false"
+  description = "Enable DynamoDB point in time recovery"
+}
+
 //Local variables
 locals {
   common_tags = {
