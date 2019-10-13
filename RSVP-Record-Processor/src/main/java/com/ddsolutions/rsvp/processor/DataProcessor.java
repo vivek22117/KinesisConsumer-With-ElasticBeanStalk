@@ -56,24 +56,25 @@ public class DataProcessor {
     }
 
     private void collectAndPersist(RSVPEventRecord rsvpEventRecord) throws IOException {
-        int batchSize = 10;
-        listOfRsvpRecords.add(rsvpEventRecord);
-        if (listOfRsvpRecords.size() == batchSize) {
-            String s3Key = createS3Key(listOfRsvpRecords);
-            s3Utils.putFileToS3(listOfRsvpRecords, true, s3Key);
-            listOfRsvpRecords = new ArrayList<>();
+        if (rsvpEventRecord != null) {
+            int batchSize = 10;
+            listOfRsvpRecords.add(rsvpEventRecord);
+            if (listOfRsvpRecords.size() == batchSize) {
+                String s3Key = createS3Key(listOfRsvpRecords);
+                s3Utils.putFileToS3(listOfRsvpRecords, true, s3Key);
+                listOfRsvpRecords = new ArrayList<>();
+            }
         }
     }
 
     private String createS3Key(List<RSVPEventRecord> listOfRsvpRecords) {
         LocalDateTime date = LocalDateTime.now();
         listOfRsvpRecords.sort(Comparator.comparingLong(RSVPEventRecord::getMtime).reversed());
-        StringBuilder s3Key = new StringBuilder().append("data").append(DELIMITER)
+        return new StringBuilder().append("data").append(DELIMITER)
                 .append("rsvp").append(DELIMITER)
                 .append(date.getYear()).append(DELIMITER)
                 .append(date.getMonthValue()).append(DELIMITER)
                 .append(date.getDayOfMonth()).append(DELIMITER)
-                .append(Instant.now().toEpochMilli()).append("_rsvp.records");
-        return s3Key.toString();
+                .append(Instant.now().toEpochMilli()).append("_rsvp.records").toString();
     }
 }

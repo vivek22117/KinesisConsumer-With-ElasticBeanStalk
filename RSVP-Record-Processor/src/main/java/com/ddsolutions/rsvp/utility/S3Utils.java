@@ -40,7 +40,6 @@ public class S3Utils {
 
     public List<RSVPEventRecord> getRSVPRecords(List<Map<String, Object>> data) {
         List<RSVPEventRecord> rsvpEventRecords = new ArrayList<>();
-
         try {
             List<Future<List<RSVPEventRecord>>> futures = new ArrayList<>();
             for (Map<String, Object> map : data) {
@@ -57,7 +56,6 @@ public class S3Utils {
         } finally {
             executorService.shutdown();
         }
-
         return rsvpEventRecords;
     }
 

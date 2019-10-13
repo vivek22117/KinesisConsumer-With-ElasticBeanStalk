@@ -17,8 +17,6 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 import software.amazon.kinesis.common.ConfigsBuilder;
-import software.amazon.kinesis.common.InitialPositionInStream;
-import software.amazon.kinesis.common.InitialPositionInStreamExtended;
 import software.amazon.kinesis.coordinator.Scheduler;
 import software.amazon.kinesis.leases.LeaseManagementConfig;
 import software.amazon.kinesis.metrics.MetricsConfig;
@@ -29,8 +27,6 @@ import software.amazon.kinesis.retrieval.RetrievalConfig;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import static com.ddsolutions.rsvp.utility.PropertyLoaderUtility.getInstance;
-import static java.lang.Boolean.parseBoolean;
 import static org.slf4j.LoggerFactory.getLogger;
 import static software.amazon.kinesis.common.InitialPositionInStream.TRIM_HORIZON;
 import static software.amazon.kinesis.common.InitialPositionInStreamExtended.newInitialPosition;
@@ -111,10 +107,10 @@ public class RSVPApplicationConfig {
                 .metricsLevel(MetricsLevel.NONE);
 
         LeaseManagementConfig leaseManagementConfig = configsBuilder.leaseManagementConfig()
-                        .cleanupLeasesUponShardCompletion(true)
-                        .maxLeasesForWorker(25)
-                        .maxLeasesToStealAtOneTime(1)
-                        .consistentReads(false);
+                .cleanupLeasesUponShardCompletion(true)
+                .maxLeasesForWorker(25)
+                .maxLeasesToStealAtOneTime(1)
+                .consistentReads(false);
         RetrievalConfig retrievalConfig = configsBuilder.retrievalConfig()
                 .initialPositionInStreamExtended(newInitialPosition(TRIM_HORIZON));
 
