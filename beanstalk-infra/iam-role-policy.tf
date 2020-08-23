@@ -141,12 +141,12 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "s3:*"
       ],
       "Resource": [
-        "arn:aws:s3:::teamconcept-deploy-*/*",
-        "arn:aws:s3:::teamconcept-tfstate-*/*",
-        "arn:aws:s3:::teamconcept-deploy-*",
-        "arn:aws:s3:::teamconcept-tfstate-*",
-        "arn:aws:s3:::rsvp-record-dev-bucket*",
-        "arn:aws:s3:::rsvp-record-dev-bucket/*"
+        "arn:aws:s3:::doubledigit-deploy-*/*",
+        "arn:aws:s3:::doubledigit-tfstate-*/*",
+        "arn:aws:s3:::doubledigit-deploy-*",
+        "arn:aws:s3:::doubledigit-tfstate-*",
+        "arn:aws:s3:::rsvp-record-qa-bucket*",
+        "arn:aws:s3:::rsvp-record-qa-bucket/*"
       ]
     },
     {

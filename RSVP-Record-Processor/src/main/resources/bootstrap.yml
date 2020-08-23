@@ -1,0 +1,32 @@
+server:
+  port: 9009
+
+spring:
+  main:
+    lazy-initialization: true
+  application:
+    name: rsvp-kinesis-consumer
+  cloud:
+    config:
+      uri: http://config-server.doubledigit-solutions.com:9001/
+
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - refresh
+          - info
+          - metrics
+          - env
+          - mappings
+          - beans
+          - shutdown
+          - prometheus
+      base-path: /internal

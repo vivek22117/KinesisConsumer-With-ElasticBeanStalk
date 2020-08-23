@@ -30,9 +30,9 @@ terraform {
 
   backend "s3" {
     profile        = "doubledigit"
-    bucket         = "teamconcept-tfstate-dev-us-east-1"
-    dynamodb_table = "teamconcept-tfstate-dev-us-east-1"
-    key            = "state/dev/elasticBeanstalk/rsvp-record-processor/terraform.tfstate"
+    bucket         = "doubledigit-tfstate-dev-us-east-1"
+    dynamodb_table = "doubledigit-tfstate-dev-us-east-1"
+    key            = "state/qa/elasticBeanstalk/rsvp-record-processor/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = "true"
   }

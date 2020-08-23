@@ -36,7 +36,7 @@ public class AWSClientConfiguration {
             if (isRunningInEC2) {
                 awsCredentials = new InstanceProfileCredentialsProvider(true);
             } else if (isRunningInLocal) {
-                awsCredentials = new ProfileCredentialsProvider("doubledigit");
+                awsCredentials = new ProfileCredentialsProvider("admin");
             } else {
                 awsCredentials = new DefaultAWSCredentialsProviderChain();
             }

@@ -128,7 +128,7 @@ public class RSVPApplicationConfig {
             if (isRunningInEC2) {
                 awsCredentialsProvider = InstanceProfileCredentialsProvider.builder().build();
             } else if (isRunningInLocal) {
-                awsCredentialsProvider = ProfileCredentialsProvider.builder().profileName("doubledigit").build();
+                awsCredentialsProvider = ProfileCredentialsProvider.builder().profileName("admin").build();
             } else {
                 awsCredentialsProvider = DefaultCredentialsProvider.builder().build();
             }
