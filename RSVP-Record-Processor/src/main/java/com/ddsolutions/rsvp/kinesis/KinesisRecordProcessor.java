@@ -41,8 +41,11 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
     @Override
     public void processRecords(ProcessRecordsInput processRecordsInput) {
         LOGGER.info("Received " + processRecordsInput.records().size() + " records");
+
         processRecordsInput.records()
                 .forEach(record -> {
+                    LOGGER.info("PartitionKey: " +record.partitionKey());
+                    LOGGER.info("SequenceNumber: " +record.sequenceNumber());
                     try {
                         dataProcessor.processor(record);
                         LOGGER.debug("record processing done!");
@@ -58,6 +61,8 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
                 processRecordsInput.checkpointer()
                         .checkpoint(recordsSequenceNumbers.get(recordsSequenceNumbers.size() - 1));
             } catch (InvalidStateException | ShutdownException ex) {
+                //Table Does Not Exist
+                //Two Processors are processing the same shard
                 LOGGER.error("Invalid state while check pointing", ex);
             }
             nextCheckPointTime = System.currentTimeMillis() + CHECK_POINT_INTERVAL;

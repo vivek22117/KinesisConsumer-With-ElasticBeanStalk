@@ -111,6 +111,7 @@ public class RSVPApplicationConfig {
                 .maxLeasesForWorker(25)
                 .maxLeasesToStealAtOneTime(1)
                 .consistentReads(false);
+        // Can be: LATEST, AT_TIMESTAMP, TRIM_HORIZON
         RetrievalConfig retrievalConfig = configsBuilder.retrievalConfig()
                 .initialPositionInStreamExtended(newInitialPosition(TRIM_HORIZON));
 
