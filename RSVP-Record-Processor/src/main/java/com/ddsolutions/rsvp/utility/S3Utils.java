@@ -30,7 +30,7 @@ public class S3Utils {
     @Value("${s3.bucket.name}")
     private String bucketName;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
 
     @Autowired
     public S3Utils(AmazonS3 amazonS3, FileUtil fileUtil) {
