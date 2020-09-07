@@ -31,7 +31,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
 
   wait_for_ready_timeout = var.wait_for_ready_timeout
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, map("Name", "rsvp-eb"))
 
   lifecycle {
     ignore_changes = ["tags"]

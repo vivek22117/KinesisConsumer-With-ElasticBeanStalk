@@ -6,29 +6,27 @@ variable "profile" {
 
 variable "environment" {
   type        = "string"
-  description = "AWS Profile name for credentials"
+  description = "Environment to deploy, Valid values 'qa', 'dev', 'prod'"
 }
 
 
 //Default Variables
 variable "default_region" {
   type    = "string"
-  default = "us-east-1"
 }
 
 variable "s3_bucket_prefix" {
   type    = "string"
-  default = "teamconcept-tfstate"
 }
 
 //EB Default Variables
 variable "wait_for_ready_timeout" {
-  default     = "15m"
+  type = string
   description = "The maximum time that Terraform should wait for an Elastic Beanstalk Environment"
 }
 
 variable "config_document" {
-  default     = "{ \"CloudWatchMetrics\": {}, \"Version\": 1}"
+  type = string
   description = "A JSON document describing the environment and instance metrics to publish to CloudWatch."
 }
 
@@ -238,12 +236,12 @@ variable "stream_view_type" {
 }
 
 variable "autoscale_min_read_capacity" {
-  default     = 5
+  default     = 2
   description = "DynamoDB autoscaling min read capacity"
 }
 
 variable "autoscale_min_write_capacity" {
-  default     = 5
+  default     = 2
   description = "DynamoDB autoscaling min write capacity"
 }
 
@@ -265,5 +263,6 @@ locals {
     owner       = "Vivek"
     team        = "TeamConcept"
     environment = var.environment
+    Project = "DoubleDigit-Solutions"
   }
 }
