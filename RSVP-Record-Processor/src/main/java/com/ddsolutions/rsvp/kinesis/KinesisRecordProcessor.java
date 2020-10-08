@@ -20,6 +20,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class KinesisRecordProcessor implements ShardRecordProcessor {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(KinesisRecordProcessor.class);
     private static final long CHECK_POINT_INTERVAL = 60000L;
     private long nextCheckPointTime;
@@ -28,7 +29,7 @@ public class KinesisRecordProcessor implements ShardRecordProcessor {
     private DataProcessor dataProcessor;
 
     @Autowired
-    public KinesisRecordProcessor(DataProcessor dataProcessor) {
+    public KinesisRecordProcessor(final DataProcessor dataProcessor) {
         this.dataProcessor = dataProcessor;
     }
 

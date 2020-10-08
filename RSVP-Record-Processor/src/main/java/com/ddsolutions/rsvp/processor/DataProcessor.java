@@ -31,7 +31,7 @@ public class DataProcessor {
     private S3Utils s3Utils;
 
     @Autowired
-    public DataProcessor(JsonUtility jsonUtility, S3Utils s3Utils) {
+    public DataProcessor(final JsonUtility jsonUtility, final S3Utils s3Utils) {
         this.jsonUtility = jsonUtility;
         this.s3Utils = s3Utils;
     }
