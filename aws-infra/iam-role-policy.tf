@@ -24,7 +24,7 @@ resource "aws_iam_role_policy_attachment" "beanstalk_service" {
 
 //Beanstalk EC2 role
 resource "aws_iam_role" "rsvp_ec2_role" {
-  depends_on = ["aws_iam_policy.rsvp_ec2_policy"]
+  depends_on = [aws_iam_policy.rsvp_ec2_policy]
 
   name = "RSVPRecordProcessorEC2Role"
 
@@ -148,6 +148,19 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "arn:aws:s3:::rsvp-record-qa-bucket*",
         "arn:aws:s3:::rsvp-record-qa-bucket/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+                "kinesis:DescribeStream",
+                "kinesis:DescribeStreamSummary",
+                "kinesis:GetRecords",
+                "kinesis:GetShardIterator",
+                "kinesis:ListShards",
+                "kinesis:ListStreams",
+                "kinesis:SubscribeToShard"
+      ],
+      "Resource": "*"
     },
     {
       "Effect": "Allow",

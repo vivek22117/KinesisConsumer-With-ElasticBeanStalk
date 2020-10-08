@@ -27,7 +27,7 @@ data "terraform_remote_state" "rsvp_lambda" {
   config = {
     profile = "admin"
     bucket  = "${var.s3_bucket_prefix}-${var.environment}-${var.default_region}"
-    key     = "state/${var.environment}/lambda/rsvp-lambda-kinesis-db/terraform.tfstate"
+    key     = "state/${var.environment}/lambda/rsvp-lambda-fixed-resources/terraform.tfstate"
     region  = var.default_region
   }
 }
