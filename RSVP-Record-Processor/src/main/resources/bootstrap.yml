@@ -8,7 +8,7 @@ spring:
     name: rsvp-kinesis-consumer
   cloud:
     config:
-      uri: http://config-server.doubledigit-solutions.com:9001/
+      uri: http://config-server-ecs-alb-787882846.us-east-1.elb.amazonaws.com/
       label: develop
 
 management:
