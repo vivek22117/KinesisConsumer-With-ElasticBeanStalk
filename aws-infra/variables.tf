@@ -1,47 +1,63 @@
-//Global Variables
+###########============Global Variables=============###################
 variable "profile" {
-  type        = "string"
+  type        = string
   description = "AWS Profile name for credentials"
 }
 
 variable "environment" {
-  type        = "string"
-  description = "AWS Profile name for credentials"
+  type        = string
+  description = "Environment to deploy, Valid values 'qa', 'dev', 'prod'"
 }
 
 
-//Default Variables
+############===========Default Variables================##############
 variable "default_region" {
-  type    = "string"
+  type    = string
   default = "us-east-1"
 }
 
 variable "s3_bucket_prefix" {
-  type    = "string"
-  default = "teamconcept-tfstate"
+  type    = string
+  default = "doubledigit-tfstate"
 }
 
-//EB Default Variables
+################===EB Default Variables======#######################
 variable "tier" {
+  type = string
   default = "WebServer"
   description = "Beanstalk environment tier {WebServer, Worker}"
 }
 
 variable "deploy_key" {
-  type = "string"
+  type = string
   description = "S3 key path for beanstalk application jar"
-  default = "eb/rspv-event-processor/rsvp-*.jar"
+  default = "eb/rsvp-event-processor/rsvp-record-processor-1.0.0-jar-with-dependencies.jar"
 }
 
 variable "wait_for_ready_timeout" {
+  type = string
   default     = "15m"
   description = "The maximum time that Terraform should wait for an Elastic Beanstalk Environment"
 }
 
 variable "config_document" {
+  type = string
   default     = "{ \"CloudWatchMetrics\": {}, \"Version\": 1}"
   description = "A JSON document describing the environment and instance metrics to publish to CloudWatch."
 }
+
+variable "ssh_listener_enabled" {
+  type = string
+  default     = "false"
+  description = "Enable ssh port"
+}
+
+variable "ssh_listener_port" {
+  type = string
+  default     = "22"
+  description = "SSH port"
+}
+
 
 variable "eb_environment" {
   type = string
@@ -53,6 +69,7 @@ variable "elb_scheme" {
 }
 
 variable "loadbalancer_certificate_arn" {
+  type = string
   default     = ""
   description = "Load Balancer SSL certificate ARN."
 }
@@ -71,48 +88,39 @@ variable "dp_batch_size_type" {
   type = string
   description = "The type of number that is specified in BatchSize."
 }
-variable "ssh_listener_enabled" {
-  default     = "false"
-  description = "Enable ssh port"
-}
-
-variable "ssh_listener_port" {
-  default     = "22"
-  description = "SSH port"
-}
 
 variable "associate_public_ip_address" {
-  type = "string"
+  type = string
   description = "allow public ip address in ec2"
 }
 
 variable "rolling_update_type" {
-  type = "string"
+  type = string
   description = "Rolling update type like Health"
 }
 
 variable "deployment_policy" {
-  type = "string"
+  type = string
   description = "Deployment policy for EB stalk Immutable or Rolling"
 }
 
 variable "rolling_update_enabled" {
-  type = "string"
+  type = string
   description = "Is rolling update enbaled or not"
 }
 
 variable "key_pair" {
-  type = "string"
+  type = string
   description = "Name of SSH key that will be deployed on Elastic Beanstalk"
 }
 
 variable "root_volume_size" {
-  type     = "string"
+  type     = string
   description = "The size of the EBS root volume"
 }
 
 variable "root_volume_type" {
-  type     = "string"
+  type     = string
   description = "The type of the EBS root volume"
 }
 
@@ -122,32 +130,32 @@ variable "instance_ami" {
 }
 
 variable "instance_type" {
-  type     = "string"
+  type     = string
   description = "Instances type"
 }
 
 variable "enhanced_reporting_enabled" {
-  type = "string"
+  type = string
   description = "Is enhanced reporting enabled or not for EB"
 }
 
 variable "healthcheck_url" {
-  type = "string"
+  type = string
   description = "Health check url path"
 }
 
 variable "application_port" {
-  type = "string"
+  type = string
   description = "Port application is listening on"
 }
 
 variable "autoscale_min" {
-  type     = "string"
+  type     = string
   description = "Minumum instances in charge"
 }
 
 variable "autoscale_max" {
-  type     = "string"
+  type     = string
   description = "Maximum instances in charge"
 }
 
@@ -192,12 +200,12 @@ variable "scale_up_value" {
 }
 
 variable "loadbalancer_type" {
-  type     = "string"
+  type     = string
   description = "Load Balancer type, e.g. 'application' or 'classic'"
 }
 
 
-variable "monitorning_interval" {
+variable "monitoring_interval" {
   type = string
   description = "Time interval for AWS Cloudwatch metrics"
 }
@@ -221,11 +229,64 @@ variable "hc_threshold_count" {
   type = number
   description = "Consecutive successful requests before Elastic Load Balancing changes the instance health status."
 }
+
+###====================KCL DynamoDB Variables=====================###
+variable "db_table_name" {
+  type        = string
+  description = "DynamoDB table"
+}
+
+variable "hash_key" {
+  type        = string
+  description = "DynamoDB table hash key"
+}
+
+variable "billing_mode" {
+  type        = string
+  default     = "PROVISIONED"
+  description = "DynamoDB Billing mode. Can be PROVISIONED or PAY_PER_REQUEST"
+}
+
+variable "enable_streams" {
+  type        = string
+  default     = "false"
+  description = "Enable DynamoDB streams"
+}
+
+variable "stream_view_type" {
+  type        = string
+  default     = ""
+  description = "When an item in the table is modified, what information is written to the stream KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES."
+}
+
+variable "autoscale_min_read_capacity" {
+  default     = 2
+  description = "DynamoDB autoscaling min read capacity"
+}
+
+variable "autoscale_min_write_capacity" {
+  default     = 2
+  description = "DynamoDB autoscaling min write capacity"
+}
+
+variable "enable_encryption" {
+  type        = string
+  default     = "false"
+  description = "Enable DynamoDB server-side encryption"
+}
+
+variable "enable_point_in_time_recovery" {
+  type        = string
+  default     = "false"
+  description = "Enable DynamoDB point in time recovery"
+}
+
 //Local variables
 locals {
   common_tags = {
     owner       = "Vivek"
     team        = "TeamConcept"
     environment = var.environment
+    Project = "DoubleDigit-Solutions"
   }
 }

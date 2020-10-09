@@ -1,6 +1,6 @@
 # adding the zip/jar to the defined bucket
 resource "aws_s3_bucket_object" "ec2-app-package" {
-  bucket                 = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+  bucket                 = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   key                    = var.deploy_key
   source                 = "${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar"
   etag   = filemd5("${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar")
@@ -11,20 +11,22 @@ resource "aws_elastic_beanstalk_application" "rsvp_eb_application" {
 }
 
 resource "aws_elastic_beanstalk_application_version" "rsvp_eb_version" {
-  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+  depends_on = [aws_s3_bucket_object.ec2-app-package,
+    aws_elastic_beanstalk_application.rsvp_eb_application]
 
   description = "version of new deployment"
   application = aws_elastic_beanstalk_application.rsvp_eb_application.name
-  bucket = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+  bucket = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   key = var.deploy_key
-  name = aws_elastic_beanstalk_application.rsvp_eb_application.name
+  name =  "rsvp-${var.environment}-eb"
 }
 
 resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
-  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+  depends_on = [aws_s3_bucket_object.ec2-app-package,
+    aws_elastic_beanstalk_application_version.rsvp_eb_version]
 
   application = aws_elastic_beanstalk_application.rsvp_eb_application.name
-  name = "${var.environment}-eb"
+  name = "rsvp-${var.environment}-eb"
   solution_stack_name = "64bit Amazon Linux 2018.03 v3.2.1 running Tomcat 8.5 Java 8"
   version_label = aws_elastic_beanstalk_application_version.rsvp_eb_version.name
   tier = var.tier
@@ -86,15 +88,11 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
 
   setting {
     namespace = "aws:autoscaling:updatepolicy:rollingupdate"
-    name = "Timeout"
-    value = var.asg_timeout
-  }
-
-  setting {
-    namespace = "aws:autoscaling:updatepolicy:rollingupdate"
     name = "RollingUpdateType"
     value = var.rolling_update_type
   }
+
+
 
   setting {
     namespace = "aws:elasticbeanstalk:healthreporting:system"
@@ -115,6 +113,12 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   }
 
   ###=========================== Autoscale & LaunchConfig========================== ###
+  setting {
+    namespace = "aws:autoscaling:updatepolicy:rollingupdate"
+    name = "Timeout"
+    value = var.asg_timeout
+  }
+
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "IamInstanceProfile"
@@ -154,7 +158,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "MonitoringInterval"
-    value = var.monitorning_interval
+    value = var.monitoring_interval
   }
 
   setting {
@@ -260,7 +264,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name = "RSVP_RECORD_BUCKET"
-    value = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+    value = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   }
 }
 

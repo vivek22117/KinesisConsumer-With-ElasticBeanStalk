@@ -16,15 +16,15 @@ resource "aws_security_group_rule" "allow_traffic_from_bastion_sg" {
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
-  protocol                 = "ssh"
+  protocol                 = "tcp"
   security_group_id        = aws_security_group.rsvp_eb_ec2_sg.id
   source_security_group_id = data.terraform_remote_state.vpc.outputs.bastion_sg
 }
 
 resource "aws_security_group_rule" "allow_traffic_from_lb_sg" {
   type                     = "ingress"
-  from_port                = 5500
-  to_port                  = 5500
+  from_port                = var.application_port
+  to_port                  = var.application_port
   protocol                 = "tcp"
   security_group_id        = aws_security_group.rsvp_eb_ec2_sg.id
   source_security_group_id = data.terraform_remote_state.vpc.outputs.bastion_sg

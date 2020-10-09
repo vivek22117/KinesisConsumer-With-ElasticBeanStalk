@@ -1,6 +1,6 @@
 # adding the zip/jar to the defined bucket
 resource "aws_s3_bucket_object" "ec2-app-package" {
-  bucket                 = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+  bucket                 = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   key                    = var.deploy_key
   source                 = "${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar"
   etag   = filemd5("${path.module}/../RSVP-Record-Processor/target/RSVP-Record-Processor-1.0.0-jar-with-dependencies.jar")
@@ -11,22 +11,26 @@ resource "aws_elastic_beanstalk_application" "rsvp_eb_application" {
 }
 
 resource "aws_elastic_beanstalk_application_version" "rsvp_eb_version" {
-  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+  depends_on = [aws_s3_bucket_object.ec2-app-package,
+    aws_elastic_beanstalk_application.rsvp_eb_application]
 
+  name = "rsvp-event-processor-${var.environment}-${uuid()}"
   description = "version of new deployment"
-  application = "${aws_elastic_beanstalk_application.rsvp_eb_application.name}-Version-0.0.1"
-  bucket = data.terraform_remote_state.backend.outputs.deploy_bucket_name
+
+  application = aws_elastic_beanstalk_application.rsvp_eb_application.name
+  bucket = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   key = var.deploy_key
-  name = aws_elastic_beanstalk_application.rsvp_eb_application.name
 }
 
 resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
-  depends_on = ["aws_s3_bucket_object.ec2-app-package"]
+  depends_on = [aws_s3_bucket_object.ec2-app-package,
+    aws_elastic_beanstalk_application_version.rsvp_eb_version]
 
+  name = "rsvp-${var.environment}-eb"
   application = aws_elastic_beanstalk_application.rsvp_eb_application.name
-  name = var.environment
-  solution_stack_name = "64bit Amazon Linux 2018.03 v3.0.7 running Tomcat 8 Java 8"
+  solution_stack_name = "64bit Amazon Linux 2018.03 v3.4.0 running Tomcat 8.5 Java 8"
   version_label = aws_elastic_beanstalk_application_version.rsvp_eb_version.name
+  cname_prefix = "rsvp-${var.environment}-eb"
   tier = var.tier
 
   wait_for_ready_timeout = var.wait_for_ready_timeout
@@ -34,7 +38,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   tags = local.common_tags
 
   lifecycle {
-    ignore_changes = ["tags"]
+    ignore_changes = [tags]
   }
 
   setting {
@@ -203,7 +207,7 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "MonitoringInterval"
-    value = var.monitorning_interval
+    value = var.monitoring_interval
   }
 
   setting {
@@ -331,63 +335,11 @@ resource "aws_elastic_beanstalk_environment" "rsvp_eb_environment" {
     name = "DYNAMODB_TABLE"
     value = data.terraform_remote_state.rsvp_lambda.outputs.dynamodb_table
   }
-}
 
-
-data "aws_lb" "rsvp_alb" {
-  arn = aws_elastic_beanstalk_environment.rsvp_eb_environment.load_balancers[0]
-}
-
-data "aws_autoscaling_group" "rsvp_asg" {
-  name = aws_elastic_beanstalk_environment.rsvp_eb_environment.autoscaling_groups[0]
-}
-
-data "aws_lb_target_group" "rspv_alb_tg" {
-  arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
-}
-
-resource "aws_lb_listener" "http_to_http_redirect" {
-  load_balancer_arn = data.aws_lb.rsvp_alb.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type = "forward"
-    target_group_arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
-  }
-}
-
-resource "aws_lb_listener_rule" "http_root_redirect_to_health" {
-  listener_arn = aws_lb_listener.http_to_http_redirect.arn
-  priority = 100
-
-  action {
-    type = "forward"
-    target_group_arn = data.aws_autoscaling_group.rsvp_asg.target_group_arns[0]
-  }
-
-  condition {
-    field  = "path-pattern"
-    values = ["/"]
-  }
-}
-
-resource "aws_lb_listener_rule" "health_check" {
-  listener_arn = aws_lb_listener.http_to_http_redirect.arn
-
-  action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "HEALTHY"
-      status_code  = "200"
-    }
-  }
-
-  condition {
-    field  = "path-pattern"
-    values = ["/health"]
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name = "RSVP_RECORD_BUCKET"
+    value = data.terraform_remote_state.backend.outputs.artifactory_bucket_name
   }
 }
 

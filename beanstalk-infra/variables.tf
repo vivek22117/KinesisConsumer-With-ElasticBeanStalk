@@ -181,7 +181,7 @@ variable "scale_up_value" {
   description = "Number of EC2 instances to add when performing a scaling activity"
 }
 
-variable "monitorning_interval" {
+variable "monitoring_interval" {
   type = string
   description = "Time interval for AWS Cloudwatch metrics"
 }
