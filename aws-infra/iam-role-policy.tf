@@ -141,13 +141,27 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "s3:*"
       ],
       "Resource": [
-        "arn:aws:s3:::doubledigit-deploy-*/*",
+        "arn:aws:s3:::doubledigit-aritifactory-*",
+        "arn:aws:s3:::doubledigit-aritifactory-*/*",
+        "arn:aws:s3:::doubledigit-datalake-*",
+        "arn:aws:s3:::doubledigit-datalake-*/*",
         "arn:aws:s3:::doubledigit-tfstate-*/*",
-        "arn:aws:s3:::doubledigit-deploy-*",
         "arn:aws:s3:::doubledigit-tfstate-*",
         "arn:aws:s3:::rsvp-record-qa-bucket*",
         "arn:aws:s3:::rsvp-record-qa-bucket/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeTable",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
@@ -171,7 +185,50 @@ resource "aws_iam_policy" "rsvp_ec2_policy" {
         "arn:aws:cloudformation:*:*:stack/awseb-*",
         "arn:aws:cloudformation:*:*:stack/eb-*"
       ]
-    }
+    },
+ {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:DescribeAssociation",
+                "ssm:GetDeployablePatchSnapshotForInstance",
+                "ssm:GetDocument",
+                "ssm:DescribeDocument",
+                "ssm:GetManifest",
+                "ssm:GetParameter",
+                "ssm:GetParameters",
+                "ssm:ListAssociations",
+                "ssm:ListInstanceAssociations",
+                "ssm:PutInventory",
+                "ssm:PutComplianceItems",
+                "ssm:PutConfigurePackageResult",
+                "ssm:UpdateAssociationStatus",
+                "ssm:UpdateInstanceAssociationStatus",
+                "ssm:UpdateInstanceInformation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssmmessages:CreateControlChannel",
+                "ssmmessages:CreateDataChannel",
+                "ssmmessages:OpenControlChannel",
+                "ssmmessages:OpenDataChannel"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2messages:AcknowledgeMessage",
+                "ec2messages:DeleteMessage",
+                "ec2messages:FailMessage",
+                "ec2messages:GetEndpoint",
+                "ec2messages:GetMessages",
+                "ec2messages:SendReply"
+            ],
+            "Resource": "*"
+        }
   ]
 }
 EOF
