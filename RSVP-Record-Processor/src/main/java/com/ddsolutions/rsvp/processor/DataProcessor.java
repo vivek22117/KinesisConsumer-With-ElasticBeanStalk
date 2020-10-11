@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import java.util.List;
 @Component
 public class DataProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessor.class);
-    private final CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+    private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
     private static List<RSVPEventRecord> listOfRsvpRecords = new ArrayList<>();
     private static final String DELIMITER = "/";
 
